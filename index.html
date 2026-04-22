@@ -1366,14 +1366,21 @@
   <div class="tab-pane" id="tab-ema">
     <div class="ema-wrap">
       <div class="ema-controls">
-        <div class="ctrl" style="flex:1; min-width:160px;">
+        <div class="ctrl" style="flex:1; min-width:130px;">
+          <span class="ctrl-lbl">Timeframe</span>
+          <select id="emaTf">
+            <option value="1d" selected>1D Daily</option>
+            <option value="1w">1W Weekly</option>
+          </select>
+        </div>
+        <div class="ctrl" style="flex:1; min-width:130px;">
           <span class="ctrl-lbl">Universe</span>
           <select id="emaUniverse">
             <option value="USDT" selected>USDT Perps</option>
             <option value="ALL">All Pairs</option>
           </select>
         </div>
-        <div class="ctrl" style="flex:1; min-width:160px;">
+        <div class="ctrl" style="flex:1; min-width:130px;">
           <span class="ctrl-lbl">Depth</span>
           <select id="emaDepth">
             <option value="ALL" selected>Full Market</option>
@@ -1381,12 +1388,12 @@
             <option value="50">Top 50</option>
           </select>
         </div>
-        <div class="ctrl" style="flex:1; min-width:160px;">
+        <div class="ctrl" style="flex:1; min-width:130px;">
           <span class="ctrl-lbl">Breakout Window</span>
           <select id="emaWindow">
-            <option value="7" selected>Last 7 days</option>
-            <option value="5">Last 5 days</option>
-            <option value="3">Last 3 days</option>
+            <option value="14" selected>Last 14 days</option>
+            <option value="7">Last 7 days</option>
+            <option value="21">Last 21 days</option>
           </select>
         </div>
         <div class="ctrl ctrl-scan" style="min-width:140px;">
@@ -1395,7 +1402,7 @@
       </div>
 
       <div class="warn-bar info active" id="emaInfoBar" style="display:block;">
-        <b>Daily 50 EMA Breakout Scanner</b> — Finds coins where the <b>daily close</b> crossed above the 50 EMA (not a wick) and has held for 3+ consecutive daily closes within your selected window. Fresh setups only.
+        <b>Trend Reversal EMA Scanner</b> — Finds coins that were in a confirmed <b>downtrend</b> (declining 50 EMA, no prior cross for 60 days) and have now broken above the 50 EMA with a strong candle and held. Trend change detection — not just "above EMA".
       </div>
 
       <div class="progress-bar-wrap" id="emaProgressPanel">
@@ -1419,11 +1426,11 @@
           <span class="stat-val" id="emaScanCount">—</span>
         </div>
         <div class="stat">
-          <span class="stat-lbl">Breakouts Found</span>
+          <span class="stat-lbl">Reversals Found</span>
           <span class="stat-val" id="emaFoundCount" style="color:var(--green);">—</span>
         </div>
         <div class="stat">
-          <span class="stat-lbl">Avg Days Holding</span>
+          <span class="stat-lbl">Avg Hold</span>
           <span class="stat-val" id="emaAvgDays">—</span>
         </div>
         <div class="stat">
@@ -1435,8 +1442,8 @@
       <div class="ema-grid" id="emaGrid">
         <div class="ema-empty">
           <div class="ema-empty-icon">◎</div>
-          <div class="ema-empty-title">EMA Breakout Watch</div>
-          <div class="ema-empty-sub">Scan to find coins that recently crossed and held the daily 50 EMA. Only fresh breakouts within your selected window will appear.</div>
+          <div class="ema-empty-title">Trend Reversal EMA Watch</div>
+          <div class="ema-empty-sub">Scan to find coins that were in a confirmed downtrend and have now broken above the 50 EMA with structure. Only genuine trend change candidates will appear.</div>
         </div>
       </div>
     </div>
@@ -1560,6 +1567,7 @@ const el = {
   singleResultTitle: document.getElementById('singleResultTitle'),
   singleDetail:    document.getElementById('singleDetail'),
   emaScanBtn:      document.getElementById('emaScanBtn'),
+  emaTf:           document.getElementById('emaTf'),
   emaUniverse:     document.getElementById('emaUniverse'),
   emaDepth:        document.getElementById('emaDepth'),
   emaWindow:       document.getElementById('emaWindow'),
@@ -3783,10 +3791,19 @@ async function runEmaScan() {
   el.emaStats.style.display = 'none';
   el.emaInfoBar.style.display = 'none';
   el.emaGrid.innerHTML = '';
-  setEmaProgress('Fetching market universe…', 0, 0, '', 5);
+  setEmaProgress('Building symbol universe…', 0, 0, '', 5);
 
-  const windowDays = Number(el.emaWindow.value) || 7;
-  const cutoffMs = Date.now() - windowDays * 24 * 60 * 60 * 1000;
+  const tf         = el.emaTf.value;        // '1d' or '1w'
+  const isWeekly   = tf === '1w';
+  const windowDays = Number(el.emaWindow.value) || 14;
+  const cutoffMs   = Date.now() - windowDays * 24 * 60 * 60 * 1000;
+
+  // TF-aware parameters
+  const candleLimit     = isWeekly ? 120 : 150;  // enough history for 50 EMA + context
+  const slopeLookback   = isWeekly ? 10  : 20;   // candles before cross to measure EMA slope
+  const cleanCrossLook  = isWeekly ? 26  : 60;   // candles back — no prior cross allowed
+  const holdRequired    = isWeekly ? 2   : 3;    // min closes above EMA after cross
+  const binanceInterval = isWeekly ? '1w' : '1d';
 
   try {
     setEmaProgress('Fetching symbol list…', 0, 0, '', 8);
@@ -3816,7 +3833,7 @@ async function runEmaScan() {
     const maxDepth = depth === 'ALL' ? symbols.length : Number(depth);
     symbols = symbols.slice(0, maxDepth);
 
-    setEmaProgress('Scanning daily candles', 0, symbols.length, '', 10);
+    setEmaProgress('Scanning ' + (isWeekly ? 'weekly' : 'daily') + ' candles', 0, symbols.length, '', 10);
 
     const results = [];
     const batchSize = 10;
@@ -3825,16 +3842,19 @@ async function runEmaScan() {
     for (let i = 0; i < symbols.length; i += batchSize) {
       const batch = symbols.slice(i, i + batchSize);
       const curSym = batch[0] || '';
-      setEmaProgress('Scanning daily candles', done, symbols.length, curSym,
+      setEmaProgress('Scanning ' + (isWeekly ? 'weekly' : 'daily') + ' candles', done, symbols.length, curSym,
         10 + (done / Math.max(symbols.length,1)) * 85);
 
       await Promise.allSettled(batch.map(async sym => {
         try {
           let candles;
           if (provider === 'bybit') {
-            candles = await fetchBybitCandles(sym, '1d', 60);
+            candles = await fetchBybitCandles(sym, tf, candleLimit);
           } else {
-            const raw = await safeJson(_EP.bf + '/klines?symbol=' + sym + '&interval=1d&limit=60', null);
+            const raw = await safeJson(
+              _EP.bf + '/klines?symbol=' + sym + '&interval=' + binanceInterval + '&limit=' + candleLimit,
+              null
+            );
             if (!raw || !raw.length) return;
             candles = raw.map(c => ({ time: +c[0], open: +c[1], high: +c[2], low: +c[3], close: +c[4], volume: +c[5] }));
           }
@@ -3843,6 +3863,7 @@ async function runEmaScan() {
           const ema50 = ema50Series(candles);
           const n = candles.length;
 
+          // ── STEP 1: Find the most recent crossover above 50 EMA within the window ──
           let breakoutIdx = -1;
           for (let j = n - 1; j >= Math.max(1, n - windowDays - 2); j--) {
             const prevClose = candles[j-1].close;
@@ -3857,18 +3878,59 @@ async function runEmaScan() {
           const breakoutTime = candles[breakoutIdx].time;
           if (breakoutTime < cutoffMs) return;
 
-          let holdDays = 0;
+          // ── STEP 2: Confirm prior downtrend — EMA must have been sloping DOWN ──
+          // Check that EMA slopeLookback candles before the cross was HIGHER than EMA at cross
+          const slopeCheckIdx = breakoutIdx - slopeLookback;
+          if (slopeCheckIdx < 0) return; // not enough history
+          const emaAtCross   = ema50[breakoutIdx];
+          const emaBeforeCross = ema50[slopeCheckIdx];
+          // EMA was higher before = was declining = confirmed downtrend
+          if (emaBeforeCross <= emaAtCross) return;
+
+          // ── STEP 3: Clean cross — no prior cross above EMA in the lookback window ──
+          // Look back cleanCrossLook candles before the breakout — must all be below EMA
+          const cleanStart = Math.max(0, breakoutIdx - cleanCrossLook);
+          let hadPriorCross = false;
+          for (let j = cleanStart + 1; j < breakoutIdx; j++) {
+            if (candles[j-1].close <= ema50[j-1] && candles[j].close > ema50[j]) {
+              hadPriorCross = true;
+              break;
+            }
+          }
+          if (hadPriorCross) return;
+
+          // ── STEP 4: Confirm hold — price must close above EMA for holdRequired candles ──
+          let holdCount = 0;
           for (let j = breakoutIdx; j < n; j++) {
-            if (candles[j].close > ema50[j]) holdDays++;
+            if (candles[j].close > ema50[j]) holdCount++;
             else break;
           }
-          if (holdDays < 3) return;
+          if (holdCount < holdRequired) return;
 
-          const last = candles[n - 1];
-          const emaNow = ema50[n - 1];
+          // ── STEP 5: Measure prior downtrend depth ──
+          // Count how many consecutive candles BEFORE the cross were below the EMA
+          let downtrendBars = 0;
+          for (let j = breakoutIdx - 1; j >= 0; j--) {
+            if (candles[j].close < ema50[j]) downtrendBars++;
+            else break;
+          }
+
+          // ── STEP 6: EMA slope strength at crossover ──
+          // How steeply was the EMA declining before the cross (normalized by price)
+          const slopeStrength = emaBeforeCross > 0
+            ? ((emaBeforeCross - emaAtCross) / emaBeforeCross) * 100
+            : 0;
+          const slopeLabel = slopeStrength > 5 ? 'Strong decline'
+            : slopeStrength > 2 ? 'Moderate decline'
+            : 'Mild decline';
+
+          // ── STEP 7: Collect result metrics ──
+          const last    = candles[n - 1];
+          const emaNow  = ema50[n - 1];
           const abovePct = emaNow > 0 ? ((last.close - emaNow) / emaNow) * 100 : 0;
 
-          const volAvg = sma(candles.slice(breakoutIdx - 20, breakoutIdx).map(c => c.volume), 20);
+          const volStart = Math.max(0, breakoutIdx - 20);
+          const volAvg = sma(candles.slice(volStart, breakoutIdx).map(c => c.volume), Math.min(20, breakoutIdx - volStart));
           const volMult = volAvg > 0 ? candles[breakoutIdx].volume / volAvg : 1;
           const pullback = abovePct > 0 && abovePct < 4;
           const dailyAtr = atr(candles.slice(-20));
@@ -3876,10 +3938,12 @@ async function runEmaScan() {
           results.push({
             symbol: sym, base: baseSymbol(sym),
             price: last.close, emaVal: emaNow,
-            abovePct, holdDays, breakoutTime,
+            abovePct, holdDays: holdCount, breakoutTime,
             breakoutClose: candles[breakoutIdx].close,
             volMult, pullback, dailyAtr,
-            volume: last.volume * last.close
+            volume: last.volume * last.close,
+            downtrendBars, slopeStrength, slopeLabel,
+            tf, isWeekly
           });
         } catch(e) { /* skip failed symbol silently */ }
       }));
@@ -3888,7 +3952,7 @@ async function runEmaScan() {
       if (i % 3 === 0) await nextPaint();
     }
 
-    results.sort((a, b) => b.breakoutTime - a.breakoutTime || b.holdDays - a.holdDays);
+    results.sort((a, b) => b.downtrendBars - a.downtrendBars || b.volMult - a.volMult);
     setEmaProgress('Scan complete', results.length, results.length, '', 100);
     renderEmaCards(results, symbols.length);
 
@@ -3927,17 +3991,20 @@ function renderEmaCards(results, totalScanned) {
   el.emaCount.classList.add('show');
   el.emaScanCount.textContent  = totalScanned;
   el.emaFoundCount.textContent = results.length;
-  const avgDays = results.length ? (results.reduce((s, r) => s + r.holdDays, 0) / results.length).toFixed(1) : '—';
-  el.emaAvgDays.textContent = avgDays;
+  const avgHold = results.length
+    ? (results.reduce((s, r) => s + r.holdDays, 0) / results.length).toFixed(1)
+    : '—';
+  el.emaAvgDays.textContent = avgHold;
   const strongest = results.reduce((best, r) => (!best || r.abovePct > best.abovePct) ? r : best, null);
   el.emaStrongest.textContent = strongest ? strongest.base : '—';
   el.emaStats.style.display = 'grid';
 
   if (!results.length) {
+    const tf = el.emaTf.value;
     el.emaGrid.innerHTML = `<div class="ema-empty" style="grid-column:1/-1;">
       <div class="ema-empty-icon">○</div>
-      <div class="ema-empty-title">No Breakouts Found</div>
-      <div class="ema-empty-sub">No coins crossed and held the daily 50 EMA within the selected ${el.emaWindow.value}-day window. Try extending the window or scanning more pairs.</div>
+      <div class="ema-empty-title">No Trend Reversals Found</div>
+      <div class="ema-empty-sub">No coins with a confirmed prior downtrend crossed and held the ${tf === '1w' ? 'weekly' : 'daily'} 50 EMA within the selected window. Try extending the window or scanning more pairs.</div>
     </div>`;
     return;
   }
@@ -3948,6 +4015,8 @@ function renderEmaCards(results, totalScanned) {
     const daysAgo = Math.round((Date.now() - r.breakoutTime) / 86400000);
     const aboveCol = r.abovePct > 8 ? 'var(--green)' : r.abovePct > 3 ? 'var(--gold)' : 'var(--cyan)';
     const volLabel = r.volMult >= 2 ? '🔥 ' + r.volMult.toFixed(1) + 'x avg' : r.volMult >= 1.3 ? r.volMult.toFixed(1) + 'x avg' : 'Normal';
+    const tfLabel  = r.isWeekly ? 'weeks' : 'days';
+    const slopeCol = r.slopeStrength > 5 ? 'var(--red)' : r.slopeStrength > 2 ? 'var(--gold)' : 'var(--muted)';
 
     return `<div class="ema-card ${strengthClass}">
       <div class="ema-card-head">
@@ -3956,15 +4025,20 @@ function renderEmaCards(results, totalScanned) {
           <div style="font-size:10px; color:var(--muted); margin-top:3px;">${fmtPrice(r.price)}</div>
         </div>
         <div class="ema-card-badges">
-          <span class="ema-hold-badge">${r.holdDays}D HOLD</span>
+          <span class="ema-hold-badge">${r.holdDays}${r.isWeekly ? 'W' : 'D'} HOLD</span>
           <span class="ema-days-lbl">${daysAgo === 0 ? 'today' : daysAgo + 'd ago'}</span>
         </div>
+      </div>
+      <div style="padding:7px 16px 6px; border-bottom:1px solid var(--border); background:rgba(255,68,68,0.04);">
+        <span style="font-family:'Syne',sans-serif;font-size:8px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted);">Prior Downtrend</span>
+        <span style="font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600;color:var(--sub);margin-left:8px;">${r.downtrendBars} ${tfLabel} below EMA</span>
+        <span style="font-size:9px;color:${slopeCol};margin-left:8px;">· ${r.slopeLabel}</span>
       </div>
       <div class="ema-card-body">
         <div class="ema-stat-cell"><span class="ema-stat-lbl">50 EMA</span><span class="ema-stat-val">${fmtPrice(r.emaVal)}</span></div>
         <div class="ema-stat-cell"><span class="ema-stat-lbl">Above EMA</span><span class="ema-stat-val" style="color:${aboveCol};">+${r.abovePct.toFixed(2)}%</span></div>
         <div class="ema-stat-cell"><span class="ema-stat-lbl">Vol on Break</span><span class="ema-stat-val" style="color:${r.volMult >= 2 ? 'var(--green)' : 'var(--text)'};">${volLabel}</span></div>
-        <div class="ema-stat-cell"><span class="ema-stat-lbl">Daily ATR</span><span class="ema-stat-val">${fmtPrice(r.dailyAtr)}</span></div>
+        <div class="ema-stat-cell"><span class="ema-stat-lbl">ATR</span><span class="ema-stat-val">${fmtPrice(r.dailyAtr)}</span></div>
       </div>
       <div class="ema-card-foot">
         <span class="ema-breakout-date">Crossed: ${dateStr}</span>
