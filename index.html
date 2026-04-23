@@ -113,6 +113,9 @@
       --tab-ema:    #c87eff;
       --tab-ema-dim:    rgba(200,126,255,0.10);
       --tab-ema-b:      rgba(200,126,255,0.22);
+      --tab-coil:   #ff9f1c;
+      --tab-coil-dim:   rgba(255,159,28,0.10);
+      --tab-coil-b:     rgba(255,159,28,0.22);
     }
 
     .tabs-bar {
@@ -163,6 +166,11 @@
     .tab-btn[data-tab="ema"].active { color: var(--tab-ema); border-bottom-color: var(--tab-ema); background: var(--tab-ema-dim); }
     .tab-btn[data-tab="ema"].active .tab-icon { opacity: 1; transform: scale(1.1); }
 
+    .tab-btn[data-tab="coil"]:hover:not(.active) { color: var(--tab-coil); background: var(--tab-coil-dim); }
+    .tab-btn[data-tab="coil"]:hover:not(.active) .tab-icon { opacity: 0.8; }
+    .tab-btn[data-tab="coil"].active { color: var(--tab-coil); border-bottom-color: var(--tab-coil); background: var(--tab-coil-dim); }
+    .tab-btn[data-tab="coil"].active .tab-icon { opacity: 1; transform: scale(1.1); }
+
     .tab-count {
       font-family: 'JetBrains Mono', monospace;
       font-weight: 700; font-size: 9px;
@@ -174,6 +182,7 @@
     .tab-count.show { display: inline-flex; }
     .tab-btn[data-tab="market"] .tab-count { color: var(--tab-market); background: var(--tab-market-dim); border-color: var(--tab-market-b); }
     .tab-btn[data-tab="ema"] .tab-count { color: var(--tab-ema); background: var(--tab-ema-dim); border-color: var(--tab-ema-b); }
+    .tab-btn[data-tab="coil"] .tab-count { color: var(--tab-coil); background: var(--tab-coil-dim); border-color: var(--tab-coil-b); }
 
     .page-wrap {
       padding-top: calc(var(--nav-h) + var(--tab-h));
@@ -1025,6 +1034,117 @@
     }
 
     .drawer { touch-action: pan-y; }
+
+    /* ── COIL WATCH STYLES ── */
+    .coil-wrap { padding: 0; }
+    .coil-controls {
+      display: flex; flex-wrap: wrap; gap: 0;
+      background: var(--bg2);
+      border-bottom: 1px solid var(--border);
+    }
+    .coil-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
+      gap: 1px;
+      background: var(--border);
+      padding: 0;
+    }
+    @media (max-width: 600px) { .coil-grid { grid-template-columns: 1fr; } }
+
+    .coil-card {
+      background: var(--bg2);
+      display: flex; flex-direction: column;
+      transition: background 150ms;
+      position: relative; overflow: hidden;
+    }
+    .coil-card:hover { background: var(--bg3); }
+    .coil-card::before {
+      content: '';
+      position: absolute; left: 0; top: 0; bottom: 0;
+      width: 3px;
+    }
+    .coil-card.coil-long::before  { background: var(--tab-coil); box-shadow: 0 0 8px rgba(255,159,28,0.4); }
+    .coil-card.coil-short::before { background: var(--red); box-shadow: 0 0 8px rgba(255,68,68,0.3); }
+
+    .coil-card-head {
+      display: flex; align-items: flex-start; justify-content: space-between;
+      padding: 12px 14px 8px 16px;
+      border-bottom: 1px solid var(--border);
+    }
+    .coil-card-sym {
+      font-family: 'Syne', sans-serif;
+      font-weight: 800; font-size: 17px;
+      color: var(--text); letter-spacing: -0.01em; line-height: 1;
+    }
+    .coil-card-sym span { font-size: 10px; font-weight: 500; color: var(--muted); font-family: 'JetBrains Mono', monospace; }
+
+    .coil-dir-badge {
+      font-family: 'Syne', sans-serif;
+      font-weight: 700; font-size: 9px;
+      letter-spacing: 0.08em; text-transform: uppercase;
+      padding: 3px 8px; border: 1px solid;
+    }
+    .coil-dir-badge.long  { color: var(--tab-coil); background: var(--tab-coil-dim); border-color: var(--tab-coil-b); }
+    .coil-dir-badge.short { color: var(--red); background: var(--red-dim); border-color: rgba(255,68,68,0.2); }
+
+    .coil-trigger-bar {
+      padding: 8px 16px 6px;
+      border-bottom: 1px solid var(--border);
+      background: rgba(255,159,28,0.03);
+    }
+    .coil-trigger-lbl {
+      font-family: 'Syne', sans-serif;
+      font-size: 8px; font-weight: 700;
+      letter-spacing: 0.1em; text-transform: uppercase;
+      color: var(--muted); display: block; margin-bottom: 3px;
+    }
+    .coil-trigger-level {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 14px; font-weight: 700;
+      color: var(--tab-coil);
+    }
+    .coil-trigger-dist {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px; font-weight: 600;
+      margin-left: 10px;
+    }
+
+    .coil-card-body {
+      display: grid; grid-template-columns: 1fr 1fr;
+      gap: 1px; background: var(--border);
+      flex: 1;
+    }
+    .coil-stat-cell { background: var(--bg2); padding: 8px 11px; }
+    .coil-card:hover .coil-stat-cell { background: var(--bg3); }
+    .coil-stat-lbl {
+      font-family: 'Syne', sans-serif;
+      font-size: 8px; font-weight: 700;
+      letter-spacing: 0.1em; text-transform: uppercase;
+      color: var(--muted); display: block; margin-bottom: 3px;
+    }
+    .coil-stat-val {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px; font-weight: 600;
+      color: var(--text); display: block;
+    }
+
+    .coil-card-foot {
+      padding: 8px 16px;
+      background: var(--bg2);
+      border-top: 1px solid var(--border);
+      font-size: 10px; color: var(--muted);
+      line-height: 1.55;
+    }
+    .coil-card:hover .coil-card-foot { background: var(--bg3); }
+
+    .coil-empty {
+      grid-column: 1 / -1;
+      display: flex; flex-direction: column; align-items: center;
+      padding: 60px 20px; text-align: center;
+    }
+    .coil-empty-icon { font-size: 32px; color: var(--muted); margin-bottom: 12px; opacity: 0.4; }
+    .coil-empty-title { font-family: 'Syne', sans-serif; font-weight: 700; font-size: 15px; color: var(--sub); margin-bottom: 8px; }
+    .coil-empty-sub { font-size: 11px; color: var(--muted); max-width: 420px; line-height: 1.65; }
   </style>
 </head>
 <body>
@@ -1054,6 +1174,11 @@
     <span class="tab-icon">≋</span>
     EMA Watch
     <span class="tab-count" id="emaCount">0</span>
+  </button>
+  <button class="tab-btn" data-tab="coil" onclick="switchTab('coil')">
+    <span class="tab-icon">🐇</span>
+    Coil Watch
+    <span class="tab-count" id="coilCount">0</span>
   </button>
 </div>
 
@@ -1447,6 +1572,94 @@
     </div>
   </div><!-- /tab-ema -->
 
+  <!-- TAB: COIL WATCH -->
+  <div class="tab-pane" id="tab-coil">
+    <div class="coil-wrap">
+      <div class="coil-controls">
+        <div class="ctrl" style="flex:1; min-width:130px;">
+          <span class="ctrl-lbl">Timeframe</span>
+          <select id="coilTf">
+            <option value="1h">1h Swing</option>
+            <option value="4h" selected>4h Position</option>
+            <option value="1d">1D Macro</option>
+          </select>
+        </div>
+        <div class="ctrl" style="flex:1; min-width:130px;">
+          <span class="ctrl-lbl">Universe</span>
+          <select id="coilUniverse">
+            <option value="USDT" selected>USDT Perps</option>
+            <option value="ALL">All Pairs</option>
+          </select>
+        </div>
+        <div class="ctrl" style="flex:1; min-width:130px;">
+          <span class="ctrl-lbl">Depth</span>
+          <select id="coilDepth">
+            <option value="ALL" selected>Full Market</option>
+            <option value="100">Top 100</option>
+            <option value="50">Top 50</option>
+          </select>
+        </div>
+        <div class="ctrl" style="flex:1; min-width:130px;">
+          <span class="ctrl-lbl">Direction</span>
+          <select id="coilDir">
+            <option value="ALL" selected>Both</option>
+            <option value="LONG">Long Coils</option>
+            <option value="SHORT">Short Coils</option>
+          </select>
+        </div>
+        <div class="ctrl ctrl-scan" style="min-width:140px;">
+          <button id="coilScanBtn">Scan Coils →</button>
+        </div>
+      </div>
+
+      <div class="warn-bar info active" id="coilInfoBar" style="display:block;">
+        <b>🐇 Coil Watch</b> — Finds coins compressing against a key structural level (most recent Lower High for longs, Higher Low for shorts) with declining volume and no sweep yet. These are <b>pre-rabbit setups</b> — not signals, but levels to watch. When price closes above/below the trigger level with a strong body and volume, the rabbit has left.
+      </div>
+
+      <div class="progress-bar-wrap" id="coilProgressPanel">
+        <div class="progress-top">
+          <div class="progress-top-left">
+            <span class="progress-stage-main" id="coilProgressStage">—</span>
+            <span class="progress-sub" id="coilProgressSub"></span>
+          </div>
+          <span class="progress-pct" id="coilProgressPct">0%</span>
+        </div>
+        <div class="progress-track">
+          <div class="progress-fill" id="coilProgressFill"></div>
+        </div>
+      </div>
+
+      <div class="warn-bar error" id="coilErrorBox"></div>
+
+      <div class="stats-strip" id="coilStats" style="display:none;">
+        <div class="stat">
+          <span class="stat-lbl">Scanned</span>
+          <span class="stat-val" id="coilScanCount">—</span>
+        </div>
+        <div class="stat">
+          <span class="stat-lbl">Coils Found</span>
+          <span class="stat-val" id="coilFoundCount" style="color:var(--tab-coil);">—</span>
+        </div>
+        <div class="stat">
+          <span class="stat-lbl">Closest to Trigger</span>
+          <span class="stat-val" id="coilClosest">—</span>
+        </div>
+        <div class="stat">
+          <span class="stat-lbl">Avg Distance</span>
+          <span class="stat-val" id="coilAvgDist">—</span>
+        </div>
+      </div>
+
+      <div class="coil-grid" id="coilGrid">
+        <div class="coil-empty">
+          <div class="coil-empty-icon">🐇</div>
+          <div class="coil-empty-title">Coil Watch</div>
+          <div class="coil-empty-sub">Scan to find coins compressing against key structural levels. Pre-rabbit setups — watch the trigger level, not the current price.</div>
+        </div>
+      </div>
+    </div>
+  </div><!-- /tab-coil -->
+
 </div><!-- /page-wrap -->
 
 <!-- DETAIL DRAWER -->
@@ -1503,7 +1716,7 @@ const state = {
   timer: null, countdown: null, nextAt: 0,
   provider: 'binance',
   busy: false, progressPercent: 0,
-  singleBusy: false, emaBusy: false,
+  singleBusy: false, emaBusy: false, coilBusy: false,
   lastScanTime: null, lastScanTf: null,
   stalenessInterval: null
 };
@@ -1582,7 +1795,26 @@ const el = {
   emaAvgDays:      document.getElementById('emaAvgDays'),
   emaStrongest:    document.getElementById('emaStrongest'),
   emaCount:        document.getElementById('emaCount'),
-  emaInfoBar:      document.getElementById('emaInfoBar')
+  emaInfoBar:      document.getElementById('emaInfoBar'),
+  coilScanBtn:     document.getElementById('coilScanBtn'),
+  coilTf:          document.getElementById('coilTf'),
+  coilUniverse:    document.getElementById('coilUniverse'),
+  coilDepth:       document.getElementById('coilDepth'),
+  coilDir:         document.getElementById('coilDir'),
+  coilProgressPanel:document.getElementById('coilProgressPanel'),
+  coilProgressStage:document.getElementById('coilProgressStage'),
+  coilProgressSub: document.getElementById('coilProgressSub'),
+  coilProgressPct: document.getElementById('coilProgressPct'),
+  coilProgressFill:document.getElementById('coilProgressFill'),
+  coilErrorBox:    document.getElementById('coilErrorBox'),
+  coilGrid:        document.getElementById('coilGrid'),
+  coilStats:       document.getElementById('coilStats'),
+  coilScanCount:   document.getElementById('coilScanCount'),
+  coilFoundCount:  document.getElementById('coilFoundCount'),
+  coilClosest:     document.getElementById('coilClosest'),
+  coilAvgDist:     document.getElementById('coilAvgDist'),
+  coilCount:       document.getElementById('coilCount'),
+  coilInfoBar:     document.getElementById('coilInfoBar')
 };
 
 if (location.protocol === 'file:') el.corsWarning.classList.add('active');
@@ -2193,8 +2425,12 @@ function analyzeStructure(candles, tf) {
   const lowerLows   = lastLows.length  >= 2 && lastLows[lastLows.length-1].price   < lastLows[lastLows.length-2].price;
 
   let bias = 'Range';
-  if ((higherHighs && higherLows) || slope > a * 0.12 || brokeHigh) bias = 'Bullish';
-  if ((lowerHighs  && lowerLows)  || slope < -a * 0.12 || brokeLow) bias = 'Bearish';
+  // Pivot structure is the primary signal — must take priority
+  if (higherHighs && higherLows) bias = 'Bullish';
+  else if (lowerHighs && lowerLows) bias = 'Bearish';
+  // No clear pivot structure — use EMA slope and price action as tiebreaker
+  else if (slope > a * 0.12 || brokeHigh) bias = 'Bullish';
+  else if (slope < -a * 0.12 || brokeLow) bias = 'Bearish';
 
   const sweepLow  = candles.slice(-8).some(c => c.low  < recentLow.price  && c.close > recentLow.price);
   const sweepHigh = candles.slice(-8).some(c => c.high > recentHigh.price && c.close < recentHigh.price);
@@ -4046,8 +4282,318 @@ function renderEmaCards(results, totalScanned) {
 }
 
 /* ══════════════════════════════════════
-   AUTO-REFRESH
+   COIL WATCH — PRE-RABBIT SCANNER
 ══════════════════════════════════════ */
+function setCoilProgress(stage, done, total, curSym, forcedPct) {
+  const safeTotal = Math.max(Number(total) || 0, 0);
+  const safeDone  = Math.max(Number(done)  || 0, 0);
+  const pct = Number.isFinite(forcedPct) ? clamp(Math.round(forcedPct), 0, 100)
+    : safeTotal ? clamp(Math.round((safeDone / safeTotal) * 100), 0, 100) : 0;
+  el.coilProgressPanel.classList.add('active');
+  el.coilProgressStage.textContent = stage;
+  el.coilProgressPct.textContent   = pct + '%';
+  el.coilProgressFill.style.width  = pct + '%';
+  let sub = '';
+  if (safeTotal > 0 && safeDone > 0) {
+    sub = safeDone + ' / ' + safeTotal + ' coins';
+    if (curSym) sub += ' &nbsp;·&nbsp; <span class="ps-symbol">' + curSym.replace('USDT','') + '</span>';
+  }
+  el.coilProgressSub.innerHTML = sub;
+}
+
+async function runCoilScan() {
+  if (state.coilBusy) return;
+  state.coilBusy = true;
+  el.coilScanBtn.disabled = true;
+  el.coilScanBtn.textContent = 'Scanning…';
+  el.coilErrorBox.classList.remove('active');
+  el.coilStats.style.display = 'none';
+  el.coilInfoBar.style.display = 'none';
+  el.coilGrid.innerHTML = '';
+  setCoilProgress('Building symbol universe…', 0, 0, '', 5);
+
+  const tf          = el.coilTf.value;
+  const dirFilter   = el.coilDir.value;
+  const quoteFilter = el.coilUniverse.value;
+  const depth       = el.coilDepth.value;
+  const tfWing      = { '1h': 4, '4h': 5, '1d': 7 }[tf] || 4;
+  const candleLimit = 180;
+  const binanceInt  = tf;
+
+  try {
+    setCoilProgress('Fetching symbol list…', 0, 0, '', 8);
+    let symbols = [];
+    let provider = 'binance';
+
+    try {
+      const tickers = await getJson(_EP.bf + '/ticker/24hr');
+      symbols = (Array.isArray(tickers) ? tickers : [])
+        .filter(i => i.symbol && !i.symbol.includes('_'))
+        .filter(i => quoteFilter === 'ALL' || i.symbol.endsWith(quoteFilter))
+        .filter(i => Number(i.quoteVolume) > 5000000)
+        .sort((a,b) => Number(b.quoteVolume) - Number(a.quoteVolume))
+        .map(i => i.symbol);
+    } catch(e) {
+      provider = 'bybit';
+      const bybitTickers = await safeJson(_EP.by + '/tickers?category=linear', { result: { list: [] } });
+      symbols = (bybitTickers?.result?.list || [])
+        .filter(i => quoteFilter === 'ALL' || normalizeSymbol(i.symbol).endsWith(quoteFilter))
+        .filter(i => Number(i.turnover24h || 0) > 5000000)
+        .sort((a,b) => Number(b.turnover24h) - Number(a.turnover24h))
+        .map(i => normalizeSymbol(i.symbol));
+    }
+
+    const maxDepth = depth === 'ALL' ? symbols.length : Number(depth);
+    symbols = symbols.slice(0, maxDepth);
+
+    setCoilProgress('Scanning for coils…', 0, symbols.length, '', 10);
+
+    const results = [];
+    const batchSize = 8;
+    let done = 0;
+
+    for (let i = 0; i < symbols.length; i += batchSize) {
+      const batch = symbols.slice(i, i + batchSize);
+      const curSym = batch[0] || '';
+      setCoilProgress('Scanning for coils…', done, symbols.length, curSym,
+        10 + (done / Math.max(symbols.length, 1)) * 85);
+
+      await Promise.allSettled(batch.map(async sym => {
+        try {
+          let candles;
+          if (provider === 'bybit') {
+            candles = await fetchBybitCandles(sym, tf, candleLimit);
+          } else {
+            const raw = await safeJson(
+              _EP.bf + '/klines?symbol=' + sym + '&interval=' + binanceInt + '&limit=' + candleLimit,
+              null
+            );
+            if (!raw || !raw.length) return;
+            candles = raw.map(c => ({ time: +c[0], open: +c[1], high: +c[2], low: +c[3], close: +c[4], volume: +c[5] }));
+          }
+          if (!candles || candles.length < 60) return;
+
+          // ── Pivot detection (reuse findPivots with TF-aware wing) ──
+          const pivots  = findPivots(candles, tf);
+          const highs   = pivots.highs;
+          const lows    = pivots.lows;
+          if (highs.length < 2 || lows.length < 2) return;
+
+          const lastHighs = highs.slice(-5);
+          const lastLows  = lows.slice(-5);
+          const last      = candles[candles.length - 1];
+          const atrVal    = atr(candles.slice(-20));
+
+          // Volume average (20-bar)
+          const volAvg20 = candles.slice(-21, -1).reduce((s, c) => s + c.volume, 0) / 20;
+
+          // ── LONG COIL detection ──
+          if (dirFilter !== 'SHORT') {
+            // Confirmed downtrend: lowerHighs + lowerLows
+            const lowerHighs = lastHighs.length >= 2 && lastHighs[lastHighs.length-1].price < lastHighs[lastHighs.length-2].price;
+            const lowerLows  = lastLows.length  >= 2 && lastLows[lastLows.length-1].price  < lastLows[lastLows.length-2].price;
+
+            if (lowerHighs && lowerLows) {
+              // Find most recent Lower High
+              let mrlh = null;
+              for (let j = lastHighs.length - 1; j >= 1; j--) {
+                if (lastHighs[j].price < lastHighs[j-1].price) { mrlh = lastHighs[j]; break; }
+              }
+              if (!mrlh) mrlh = lastHighs[lastHighs.length - 1];
+
+              // No sweep in last 8 candles
+              const recentSweepLow = candles.slice(-8).some(c => c.low < lastLows[lastLows.length-1].price && c.close > lastLows[lastLows.length-1].price);
+              const recentSweepHigh = candles.slice(-8).some(c => c.high > mrlh.price && c.close < mrlh.price);
+              if (recentSweepLow || recentSweepHigh) {
+                // sweep exists — skip, already CHoCH territory
+              } else {
+                // Price within 3-10% below the trigger level
+                const distPct = ((mrlh.price - last.close) / mrlh.price) * 100;
+                if (distPct >= 3 && distPct <= 10) {
+                  // Compression: avg body of last 2 candles < avg body of candles 3-4 back
+                  const body2 = (Math.abs(candles[candles.length-1].close - candles[candles.length-1].open) +
+                                 Math.abs(candles[candles.length-2].close - candles[candles.length-2].open)) / 2;
+                  const body4 = (Math.abs(candles[candles.length-3].close - candles[candles.length-3].open) +
+                                 Math.abs(candles[candles.length-4].close - candles[candles.length-4].open)) / 2;
+                  const compressed = body4 > 0 && body2 < body4 * 0.75;
+
+                  // Volume declining: last 3 candles avg below 20-bar avg
+                  const volRecent3 = (candles[candles.length-1].volume + candles[candles.length-2].volume + candles[candles.length-3].volume) / 3;
+                  const volDeclining = volAvg20 > 0 && volRecent3 < volAvg20 * 0.85;
+
+                  // Downtrend depth
+                  let downtrendBars = 0;
+                  for (let j = candles.length - 1; j >= 0; j--) {
+                    if (candles[j].close < candles[j].open || (j > 0 && candles[j].close < candles[j-1].close)) downtrendBars++;
+                    else break;
+                  }
+
+                  const compressionLabel = compressed ? 'Tight' : 'Moderate';
+                  const volLabel = volDeclining ? 'Declining ✓' : 'Neutral';
+
+                  results.push({
+                    symbol: sym, base: baseSymbol(sym),
+                    price: last.close,
+                    direction: 'LONG',
+                    triggerLevel: mrlh.price,
+                    distPct,
+                    compressed, compressionLabel,
+                    volDeclining, volLabel,
+                    atrVal,
+                    downtrendBars,
+                    volume: last.volume * last.close,
+                    tf
+                  });
+                }
+              }
+            }
+          }
+
+          // ── SHORT COIL detection ──
+          if (dirFilter !== 'LONG') {
+            const higherHighs = lastHighs.length >= 2 && lastHighs[lastHighs.length-1].price > lastHighs[lastHighs.length-2].price;
+            const higherLows  = lastLows.length  >= 2 && lastLows[lastLows.length-1].price  > lastLows[lastLows.length-2].price;
+
+            if (higherHighs && higherLows) {
+              // Find most recent Higher Low
+              let mrhl = null;
+              for (let j = lastLows.length - 1; j >= 1; j--) {
+                if (lastLows[j].price > lastLows[j-1].price) { mrhl = lastLows[j]; break; }
+              }
+              if (!mrhl) mrhl = lastLows[lastLows.length - 1];
+
+              const recentSweepHigh = candles.slice(-8).some(c => c.high > lastHighs[lastHighs.length-1].price && c.close < lastHighs[lastHighs.length-1].price);
+              const recentSweepLow  = candles.slice(-8).some(c => c.low < mrhl.price && c.close > mrhl.price);
+              if (recentSweepHigh || recentSweepLow) {
+                // sweep exists — skip
+              } else {
+                const distPct = ((last.close - mrhl.price) / mrhl.price) * 100;
+                if (distPct >= 3 && distPct <= 10) {
+                  const body2 = (Math.abs(candles[candles.length-1].close - candles[candles.length-1].open) +
+                                 Math.abs(candles[candles.length-2].close - candles[candles.length-2].open)) / 2;
+                  const body4 = (Math.abs(candles[candles.length-3].close - candles[candles.length-3].open) +
+                                 Math.abs(candles[candles.length-4].close - candles[candles.length-4].open)) / 2;
+                  const compressed = body4 > 0 && body2 < body4 * 0.75;
+                  const volRecent3 = (candles[candles.length-1].volume + candles[candles.length-2].volume + candles[candles.length-3].volume) / 3;
+                  const volDeclining = volAvg20 > 0 && volRecent3 < volAvg20 * 0.85;
+
+                  let uptrendBars = 0;
+                  for (let j = candles.length - 1; j >= 0; j--) {
+                    if (candles[j].close > candles[j].open || (j > 0 && candles[j].close > candles[j-1].close)) uptrendBars++;
+                    else break;
+                  }
+
+                  results.push({
+                    symbol: sym, base: baseSymbol(sym),
+                    price: last.close,
+                    direction: 'SHORT',
+                    triggerLevel: mrhl.price,
+                    distPct,
+                    compressed, compressionLabel: compressed ? 'Tight' : 'Moderate',
+                    volDeclining, volLabel: volDeclining ? 'Declining ✓' : 'Neutral',
+                    atrVal,
+                    downtrendBars: uptrendBars,
+                    volume: last.volume * last.close,
+                    tf
+                  });
+                }
+              }
+            }
+          }
+
+        } catch(e) { /* skip failed symbol */ }
+      }));
+
+      done += batch.length;
+      if (i % 3 === 0) await nextPaint();
+    }
+
+    // Sort by closest to trigger first
+    results.sort((a, b) => a.distPct - b.distPct);
+
+    setCoilProgress('Scan complete', results.length, results.length, '', 100);
+    renderCoilCards(results, symbols.length);
+
+  } catch(e) {
+    console.error(e);
+    el.coilErrorBox.textContent = 'Coil scan error: ' + e.message;
+    el.coilErrorBox.classList.add('active');
+    el.coilProgressPanel.classList.remove('active');
+  } finally {
+    state.coilBusy = false;
+    el.coilScanBtn.disabled = false;
+    el.coilScanBtn.textContent = 'Scan Coils →';
+  }
+}
+
+function renderCoilCards(results, totalScanned) {
+  el.coilCount.textContent = results.length;
+  el.coilCount.classList.add('show');
+  el.coilScanCount.textContent  = totalScanned;
+  el.coilFoundCount.textContent = results.length;
+
+  const closest = results[0];
+  el.coilClosest.textContent = closest ? closest.base + ' (' + closest.distPct.toFixed(1) + '%)' : '—';
+
+  const avgDist = results.length
+    ? (results.reduce((s, r) => s + r.distPct, 0) / results.length).toFixed(1) + '%'
+    : '—';
+  el.coilAvgDist.textContent = avgDist;
+  el.coilStats.style.display = 'grid';
+
+  if (!results.length) {
+    el.coilGrid.innerHTML = `<div class="coil-empty" style="grid-column:1/-1;">
+      <div class="coil-empty-icon">🐇</div>
+      <div class="coil-empty-title">No Coils Found</div>
+      <div class="coil-empty-sub">No coins found compressing within 3-10% of a key structural level with declining volume. Try a different timeframe or depth.</div>
+    </div>`;
+    return;
+  }
+
+  el.coilGrid.innerHTML = results.map(r => {
+    const isLong   = r.direction === 'LONG';
+    const dirClass = isLong ? 'long' : 'short';
+    const dirLabel = isLong ? '🐇 Long Coil' : '🐇 Short Coil';
+    const distCol  = r.distPct < 5 ? 'var(--green)' : r.distPct < 7 ? 'var(--gold)' : 'var(--sub)';
+    const tfLabel  = { '1h': '1h', '4h': '4h', '1d': '1D' }[r.tf] || r.tf;
+
+    return `<div class="coil-card coil-${dirClass}">
+      <div class="coil-card-head">
+        <div>
+          <div class="coil-card-sym">${r.base}<span>USDT</span></div>
+          <div style="font-size:10px; color:var(--muted); margin-top:3px;">${fmtPrice(r.price)} · ${tfLabel}</div>
+        </div>
+        <span class="coil-dir-badge ${dirClass}">${dirLabel}</span>
+      </div>
+      <div class="coil-trigger-bar">
+        <span class="coil-trigger-lbl">${isLong ? 'Watch Level (Lower High)' : 'Watch Level (Higher Low)'}</span>
+        <span class="coil-trigger-level">${fmtPrice(r.triggerLevel)}</span>
+        <span class="coil-trigger-dist" style="color:${distCol};">${r.distPct.toFixed(2)}% away</span>
+      </div>
+      <div class="coil-card-body">
+        <div class="coil-stat-cell">
+          <span class="coil-stat-lbl">Compression</span>
+          <span class="coil-stat-val" style="color:${r.compressed ? 'var(--tab-coil)' : 'var(--sub)'};">${r.compressionLabel}</span>
+        </div>
+        <div class="coil-stat-cell">
+          <span class="coil-stat-lbl">Volume</span>
+          <span class="coil-stat-val" style="color:${r.volDeclining ? 'var(--green)' : 'var(--muted)'};">${r.volLabel}</span>
+        </div>
+        <div class="coil-stat-cell">
+          <span class="coil-stat-lbl">ATR</span>
+          <span class="coil-stat-val">${fmtPrice(r.atrVal)}</span>
+        </div>
+        <div class="coil-stat-cell">
+          <span class="coil-stat-lbl">24h Volume</span>
+          <span class="coil-stat-val">${fmtMoney(r.volume)}</span>
+        </div>
+      </div>
+      <div class="coil-card-foot">
+        <b style="color:var(--tab-coil);">Not a signal</b> — Watch <b style="color:var(--text);">${fmtPrice(r.triggerLevel)}</b>. If price closes ${isLong ? 'above' : 'below'} this level with a strong body and above-average volume, the rabbit has left.
+      </div>
+    </div>`;
+  }).join('');
+}
 function scheduleRefresh() {
   clearTimeout(state.timer);
   clearInterval(state.countdown);
@@ -4107,6 +4653,7 @@ el.singleScanBtn.addEventListener('click', runSingleScan);
 el.singleInput.addEventListener('keydown', e => { if (e.key === 'Enter') runSingleScan(); });
 el.singleInput.addEventListener('input', () => { el.singleInput.value = el.singleInput.value.toUpperCase(); });
 el.emaScanBtn.addEventListener('click', runEmaScan);
+el.coilScanBtn.addEventListener('click', runCoilScan);
 </script>
 </body>
 </html>
