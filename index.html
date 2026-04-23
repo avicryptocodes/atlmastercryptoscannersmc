@@ -1098,11 +1098,8 @@
         <div class="ctrl">
           <span class="ctrl-lbl">Auto-Refresh</span>
           <select id="refreshMins">
-            <option value="0">Off</option>
-            <option value="1">1 min</option>
-            <option value="3">3 min</option>
-            <option value="5">5 min</option>
-            <option value="10">10 min</option>
+            <option value="0" selected>Off</option>
+            <option value="on">On (matches TF)</option>
           </select>
         </div>
         <div class="ctrl">
@@ -1143,7 +1140,7 @@
     </div>
 
     <div class="warn-bar info" id="refreshWarning" style="display:none;">
-      <b>⚠ High-frequency refresh on Full Market</b> will hit rate limits. Use Top 75 or increase interval.
+      <b>⚠ Auto-refresh on 5m/15m with Full Market</b> will hit rate limits fast. Use Top 75 or a longer timeframe.
     </div>
 
     <div class="warn-bar error" id="errorBox"></div>
@@ -1168,6 +1165,7 @@
           <option value="ALL">All</option>
           <option value="LONG">Long</option>
           <option value="SHORT">Short</option>
+          <option value="RABBIT">Rabbit</option>
           <option value="WAIT">Wait</option>
         </select>
       </div>
@@ -2410,17 +2408,17 @@ function deriveTrade(row, primary, higherAnalyses, tf) {
   if (!derivativesRule.skip && !htfRanging && !htfMixedNoMss) {
     // MSS unlocks signal (highest confidence)
     if (primary.mss) {
-      if (primary.mss.direction === 'Bullish' && mtfBias !== 'Bearish') {
+      if (primary.mss.direction === 'Bullish') {
         side = 'LONG';
-      } else if (primary.mss.direction === 'Bearish' && mtfBias !== 'Bullish') {
+      } else if (primary.mss.direction === 'Bearish') {
         side = 'SHORT';
       }
     }
     // Strong CHoCH (no 'weak') unlocks signal
     else if (primary.choch && !primary.choch.label.includes('weak')) {
-      if (primary.choch.direction === 'Bullish' && mtfBias !== 'Bearish') {
+      if (primary.choch.direction === 'Bullish') {
         side = 'LONG';
-      } else if (primary.choch.direction === 'Bearish' && mtfBias !== 'Bullish') {
+      } else if (primary.choch.direction === 'Bearish') {
         side = 'SHORT';
       }
     }
@@ -2458,8 +2456,7 @@ function deriveTrade(row, primary, higherAnalyses, tf) {
 
     // LONG rabbit: close above most recent Lower High, no sweep preceded it
     if (bodyStrong && volQualifies && !primary.sweepLow && !primary.sweepHigh
-        && mrlh && lastCandle.close > mrlh && lastCandle.close > lastCandle.open
-        && mtfBias !== 'Bearish') {
+        && mrlh && lastCandle.close > mrlh && lastCandle.close > lastCandle.open) {
       rabbitSide = 'LONG';
       rabbitBreakLevel = mrlh;
       rabbitCandle = lastCandle;
@@ -2467,16 +2464,13 @@ function deriveTrade(row, primary, higherAnalyses, tf) {
 
     // SHORT rabbit: close below most recent Higher Low, no sweep preceded it
     if (!rabbitSide && bodyStrong && volQualifies && !primary.sweepLow && !primary.sweepHigh
-        && mrhl && lastCandle.close < mrhl && lastCandle.close < lastCandle.open
-        && mtfBias !== 'Bullish') {
+        && mrhl && lastCandle.close < mrhl && lastCandle.close < lastCandle.open) {
       rabbitSide = 'SHORT';
       rabbitBreakLevel = mrhl;
       rabbitCandle = lastCandle;
     }
 
-    // HTF hard block: if HTF is cleanly opposing, kill the rabbit signal
-    if (rabbitSide === 'LONG'  && mtfBias === 'Bearish') rabbitSide = null;
-    if (rabbitSide === 'SHORT' && mtfBias === 'Bullish') rabbitSide = null;
+    // HTF hard block removed — HTF opposition now only reduces score, not kills signal
 
     // Entry missed check: if price moved >7% beyond breakout candle high/low
     if (rabbitSide === 'LONG' && rabbitCandle) {
@@ -2595,6 +2589,9 @@ function deriveTrade(row, primary, higherAnalyses, tf) {
     score += 20;
   } else if (mtfBias === 'Mixed') {
     score += 3;
+  } else if ((side === 'LONG' && mtfBias === 'Bearish') || (side === 'SHORT' && mtfBias === 'Bullish')) {
+    // Counter-trend signal — HTF actively opposes, apply penalty
+    score -= 12;
   }
   // Ranging HTF = 0 bonus
 
@@ -4054,16 +4051,21 @@ function renderEmaCards(results, totalScanned) {
 function scheduleRefresh() {
   clearTimeout(state.timer);
   clearInterval(state.countdown);
-  const mins = Number(el.refreshMins.value);
-  if (!mins) return;
-  state.nextAt = Date.now() + mins * 60000;
-  state.timer  = setTimeout(scanMarket, mins * 60000);
+  const autoOn = el.refreshMins.value === 'on';
+  if (!autoOn) return;
+  const tf   = el.timeframe.value;
+  const cfg  = tfMap[tf] || tfMap['15m'];
+  const ms   = cfg.staleMs; // use the TF's natural candle duration
+  state.nextAt = Date.now() + ms;
+  state.timer  = setTimeout(scanMarket, ms);
 }
 
 function checkRefreshWarning() {
-  const mins  = Number(el.refreshMins.value);
-  const depth = el.scanDepth.value;
-  el.refreshWarning.style.display = (mins > 0 && mins <= 3 && depth === 'ALL') ? 'block' : 'none';
+  const autoOn = el.refreshMins.value === 'on';
+  const tf     = el.timeframe.value;
+  const depth  = el.scanDepth.value;
+  // Warn only if auto-refresh is on, TF is very short, and scanning full market
+  el.refreshWarning.style.display = (autoOn && (tf === '5m' || tf === '15m') && depth === 'ALL') ? 'block' : 'none';
 }
 
 /* ══════════════════════════════════════
@@ -4077,7 +4079,7 @@ el.minScore.addEventListener('change', () => renderRows(state.rows));
 });
 el.refreshMins.addEventListener('change', () => { scheduleRefresh(); checkRefreshWarning(); });
 el.scanDepth.addEventListener('change', checkRefreshWarning);
-el.timeframe.addEventListener('change', () => { if (state.rows.length) scanMarket(); });
+el.timeframe.addEventListener('change', () => { scheduleRefresh(); checkRefreshWarning(); if (state.rows.length) scanMarket(); });
 
 el.rows.addEventListener('click', e => {
   const tr = e.target.closest('tr[data-symbol]');
